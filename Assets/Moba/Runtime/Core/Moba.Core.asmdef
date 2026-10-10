@@ -1,0 +1,7 @@
+{
+  "name": "Moba.Core",
+  "rootNamespace": "Moba.Core",
+  "references": [],
+  "autoReferenced": true,
+  "noEngineReferences": true
+}

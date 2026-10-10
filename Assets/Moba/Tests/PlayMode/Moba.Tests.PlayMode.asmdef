@@ -1,0 +1,6 @@
+{
+  "name": "Moba.Tests.PlayMode",
+  "references": ["Moba.Core"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "autoReferenced": false
+}
