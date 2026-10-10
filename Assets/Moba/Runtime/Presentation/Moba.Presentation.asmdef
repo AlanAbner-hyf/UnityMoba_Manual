@@ -1,0 +1,4 @@
+{
+	"name": "Moba.Presentation",
+	"references": ["Moba.Core", "Unity.InputSystem"]
+}
