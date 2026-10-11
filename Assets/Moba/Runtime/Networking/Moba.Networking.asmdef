@@ -1,0 +1,5 @@
+{
+  "name": "Moba.Networking",
+  "references": ["Moba.Core"],
+  "noEngineReferences": true
+}
