@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Moba.Bootstrap::Moba.Bootstrap.BattleConfigAsset
   HeroSpeed: 200
   Seed: 1831565813
-  Mode: 0
+  Mode: 2

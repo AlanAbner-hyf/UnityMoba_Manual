@@ -12,13 +12,13 @@
 
 ## 1. 固定这一阶段的战斗参数
 
-| 参数 | 默认值 | 含义 |
-| --- | --- | --- |
-| 英雄生命 | 1000 | 逻辑 HP |
-| 普攻伤害 / 范围 | 60 / 1800 | 中心距离，暂未加入碰撞半径 |
-| 普攻前摇 / 冷却 | 5 / 20 帧 | 0.25 秒 / 1 秒 |
-| Q 半径 / 伤害 / 冷却 | 3000 / 120 / 160 帧 | 3 单位 / 120 / 8 秒 |
-| 复活等待 | 100 帧 | 5 秒 |
+| 参数                 | 默认值              | 含义                       |
+| -------------------- | ------------------- | -------------------------- |
+| 英雄生命             | 1000                | 逻辑 HP                    |
+| 普攻伤害 / 范围      | 60 / 1800           | 中心距离，暂未加入碰撞半径 |
+| 普攻前摇 / 冷却      | 5 / 20 帧           | 0.25 秒 / 1 秒             |
+| Q 半径 / 伤害 / 冷却 | 3000 / 120 / 160 帧 | 3 单位 / 120 / 8 秒        |
+| 复活等待             | 100 帧              | 5 秒                       |
 
 伤害发生在逻辑帧，不由动画事件触发。攻击开始帧为 1 时，HitFrame=6；在第 6 帧到来前先接受新的移动指令，可以取消这次攻击。
 
@@ -78,13 +78,11 @@ namespace Moba.Core
 }
 ```
 
-
 在场景的配置资产中把 Mode 改为 CombatFixture，并勾选 PlayerCommandInput.EnableCombat。不要把 MovementFixture 的不支持战斗异常当作新代码错误。
 
 ## 2. 添加 SimEvent 和待结算伤害
 
 创建以下**完整文件**。事件只向外报告结果，任何观察者都不能通过事件回调再改战斗状态。
-
 
 ```csharp
 // 完整文件：Assets/Moba/Runtime/Core/SimEvent.cs
@@ -117,7 +115,6 @@ namespace Moba.Core
 }
 ```
 
-
 PendingDamage 是本帧临时数据；EntityState 的意图、HitFrame 和冷却是跨帧数据。阶段 06 哈希覆盖跨帧数据，不把显示事件当作新的权威输入。
 
 ## 3. 实现四个状态
@@ -129,7 +126,6 @@ PendingDamage 是本帧临时数据；EntityState 的意图、HitFrame 和冷却
 3. LivingState 在 Movement 阶段执行意图，在 Actions 阶段尝试攻击。
 4. AttackWindupState 在进入时记录命中帧和下一可攻击帧；退出时只清 HitFrame。
 5. DeadState 清除意图，为英雄设置复活帧；死亡期间 Tick 不执行行为。
-
 
 ```csharp
 // 完整文件：Assets/Moba/Runtime/Core/CombatFsm.cs
@@ -210,7 +206,6 @@ namespace Moba.Core
     }
 }
 ```
-
 
 状态对象是无状态单例，不能把某个英雄剩余冷却放在状态类字段里，否则所有英雄会共享冷却。
 
@@ -420,7 +415,6 @@ namespace Moba.Core
 }
 ```
 
-
 建议不要一次读完再猜。按五个小步骤实现，每步先编译：
 
 1. Create、FindEntity 与 Validate：保持六个实体和命令原子校验。
@@ -436,6 +430,8 @@ namespace Moba.Core
 ## 5. 给测试开放内部访问，而不是公开修改权限
 
 在 Core 新建 `AssemblyInfo.cs`，以下为**完整文件**：
+
+注意这是扩展名为 `.cs` 的 C# 源文件，不是 Assembly Definition 资产，不要创建 `AssemblyInfo.asmdef`。Core 目录继续只保留原来的 `Moba.Core.asmdef`。将新脚本的默认类内容全部替换为下面三行；它不需要继承 MonoBehaviour，也不需要挂到 GameObject 上。
 
 ```csharp
 using System.Runtime.CompilerServices;
@@ -478,15 +474,15 @@ public sealed class CombatTests
 
 然后按下表逐个增加测试。每个测试都从新世界开始，不依赖前一测试的状态：
 
-| 测试 | 夹具与执行 | 断言 |
-| --- | --- | --- |
-| 正常命中 | 两英雄间距 1000，帧 1 发 Attack，推进至帧 6 | 敌人 HP=940 |
-| 命中前出范围 | 第 5 帧前让目标移到范围外 | 本次不伤害 |
-| Q 冷却 | 两英雄间距 1000，连续两帧 CastArea | 只第一次扣 120 |
-| 死亡抢占 | 被攻击者 HP=60，在命中帧被击杀 | Dead、Intent=NoOp |
-| 死亡拒绝技能 | 死亡后给该英雄 CastArea | 不产生 SkillCast |
-| 复活 | 记录实际死亡帧 d，推进到 d+99 与 d+100 | 前者仍死，后者满血出生 |
-| 原子拒绝 | 同一帧蓝方合法、红方参数越界 | 两者都不发生移动 |
+| 测试         | 夹具与执行                                  | 断言                   |
+| ------------ | ------------------------------------------- | ---------------------- |
+| 正常命中     | 两英雄间距 1000，帧 1 发 Attack，推进至帧 6 | 敌人 HP=940            |
+| 命中前出范围 | 第 5 帧前让目标移到范围外                   | 本次不伤害             |
+| Q 冷却       | 两英雄间距 1000，连续两帧 CastArea          | 只第一次扣 120         |
+| 死亡抢占     | 被攻击者 HP=60，在命中帧被击杀              | Dead、Intent=NoOp      |
+| 死亡拒绝技能 | 死亡后给该英雄 CastArea                     | 不产生 SkillCast       |
+| 复活         | 记录实际死亡帧 d，推进到 d+99 与 d+100      | 前者仍死，后者满血出生 |
+| 原子拒绝     | 同一帧蓝方合法、红方参数越界                | 两者都不发生移动       |
 
 ## 6. 把事件显示出来
 
@@ -506,14 +502,14 @@ EntityView 目前在死亡时隐藏 Body、关闭 Collider；本阶段允许这�
 
 ## 8. 常见问题
 
-| 现象 | 先检查 |
-| --- | --- |
-| Q 抛 NotSupportedException | 配置是否仍为 MovementFixture |
-| 一直追击却不攻击 | 范围单位是否把 1800 写成 1.8，是否每帧重置意图 |
-| 攻击永远不命中 | 每帧重复 Transition 到前摇、不断改 HitFrame |
-| 取消后立即再攻击 | Exit 错把 AttackReadyFrame 清零 |
-| 死亡后还能命中 | 伤害结算未重新校验 source.Alive |
-| Console 找不到 Lane/Collision | 混入最终源码；本章版本没有这些依赖 |
+| 现象                          | 先检查                                         |
+| ----------------------------- | ---------------------------------------------- |
+| Q 抛 NotSupportedException    | 配置是否仍为 MovementFixture                   |
+| 一直追击却不攻击              | 范围单位是否把 1800 写成 1.8，是否每帧重置意图 |
+| 攻击永远不命中                | 每帧重复 Transition 到前摇、不断改 HitFrame    |
+| 取消后立即再攻击              | Exit 错把 AttackReadyFrame 清零                |
+| 死亡后还能命中                | 伤害结算未重新校验 source.Alive                |
+| Console 找不到 Lane/Collision | 混入最终源码；本章版本没有这些依赖             |
 
 参考：[原 CombatWorld](../../UnityMOBA/Assets/Moba/Runtime/Core/CombatWorld.cs)、[战斗测试](../../UnityMOBA/Assets/Moba/Tests/EditMode/CombatTests.cs)。
 

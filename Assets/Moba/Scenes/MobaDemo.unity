@@ -695,7 +695,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Moba.Presentation::Moba.Presentation.PlayerCommandInput
   ActionsAsset: {fileID: -944628639613478452, guid: 542f1cfb4480d294eb08d2eee97e2f22, type: 3}
   View: {fileID: 1888149142}
-  EnableCombat: 0
+  EnableCombat: 1
 --- !u!114 &1888149142
 MonoBehaviour:
   m_ObjectHideFlags: 0
