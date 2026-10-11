@@ -1,0 +1,96 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1766367335666320440
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3014477954860258760}
+  - component: {fileID: 115992533649477079}
+  - component: {fileID: 4722955179087760410}
+  m_Layer: 0
+  m_Name: ServerAiAgent
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &3014477954860258760
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1766367335666320440}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: -0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &115992533649477079
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1766367335666320440}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b0686347133cd54418e43c1a4cd46b0b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Moba.AI::Moba.AI.BlackboardAdapter
+--- !u!114 &4722955179087760410
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1766367335666320440}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d7b55c7ecdb49a4a89fa5e6f9022861, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BehaviorDesigner.Runtime.BehaviorTree
+  startWhenEnabled: 0
+  asynchronousLoad: 0
+  pauseWhenDisabled: 0
+  restartWhenComplete: 1
+  logTaskChanges: 0
+  group: 0
+  resetValuesOnRestart: 0
+  externalBehavior: {fileID: 11400000, guid: 9be6d61976b7a8e4ba2fa5bcfdaeaca3, type: 2}
+  mBehaviorSource:
+    behaviorName: Behavior
+    behaviorDescription: 
+    mTaskData:
+      types: []
+      parentIndex: 
+      startIndex: 
+      variableStartIndex: 
+      JSONSerialization: '{"EntryTask":{"Type":"BehaviorDesigner.Runtime.Tasks.EntryTask","NodeData":{"Offset":"(636.7258,25.72676)"},"ID":0,"Name":"Entry","Instant":true},"RootTask":{"Type":"BehaviorDesigner.Runtime.Tasks.Selector","NodeData":{"Offset":"(-3.27417,127.090393)"},"ID":1,"Name":"Selector","Instant":true,"AbortTypeabortType":"None","Children":[{"Type":"BehaviorDesigner.Runtime.Tasks.Sequence","NodeData":{"Offset":"(-367.592957,181.231827)"},"ID":2,"Name":"Dead","Instant":true,"AbortTypeabortType":"Both","Children":[{"Type":"Moba.AI.HeroCondition","NodeData":{"Offset":"(-101.229324,142.3681)"},"ID":3,"Name":"Hero
+        Condition","Instant":true,"HeroConditionKindKind":"Dead"},{"Type":"Moba.AI.HeroAction","NodeData":{"Offset":"(21.7253113,145.7772)"},"ID":4,"Name":"Hero
+        Action","Instant":true,"HeroActionKindKind":"HoldUntilAlive"}]},{"Type":"BehaviorDesigner.Runtime.Tasks.Sequence","NodeData":{"Offset":"(-139.090683,180)"},"ID":5,"Name":"Retreat","Instant":true,"AbortTypeabortType":"Both","Children":[{"Type":"Moba.AI.HeroCondition","NodeData":{"Offset":"(-58.63623,149.999969)"},"ID":6,"Name":"Hero
+        Condition","Instant":true,"HeroConditionKindKind":"Retreat"},{"Type":"Moba.AI.HeroAction","NodeData":{"Offset":"(61.36389,159.999969)"},"ID":7,"Name":"Hero
+        Action","Instant":true,"HeroActionKindKind":"RetreatOrRecover"}]},{"Type":"BehaviorDesigner.Runtime.Tasks.Sequence","NodeData":{"Offset":"(110.909576,180.000015)"},"ID":8,"Name":"AreaSkill","Instant":true,"AbortTypeabortType":"Both","Children":[{"Type":"Moba.AI.HeroCondition","NodeData":{"Offset":"(-49.9997559,148.636322)"},"ID":9,"Name":"Hero
+        Condition","Instant":true,"HeroConditionKindKind":"EnemyInSkillRange"},{"Type":"Moba.AI.HeroCondition","NodeData":{"Offset":"(73.6364746,148.636322)"},"ID":10,"Name":"Hero
+        Condition","Instant":true,"HeroConditionKindKind":"SkillReady"},{"Type":"Moba.AI.HeroAction","NodeData":{"Offset":"(195.0002,147.27269)"},"ID":11,"Name":"Hero
+        Action","Instant":true,"HeroActionKindKind":"IssueAreaSkill"}]},{"Type":"BehaviorDesigner.Runtime.Tasks.Sequence","NodeData":{"Offset":"(459.935455,180.000015)"},"ID":12,"Name":"Combat","Instant":true,"AbortTypeabortType":"Both","Children":[{"Type":"Moba.AI.HeroCondition","NodeData":{"Offset":"(-19.0474854,160)"},"ID":13,"Name":"Hero
+        Condition","Instant":true,"HeroConditionKindKind":"HasTarget"},{"Type":"Moba.AI.HeroAction","NodeData":{"Offset":"(100.952515,158.095276)"},"ID":14,"Name":"Hero
+        Action","Instant":true,"HeroActionKindKind":"AttackOrChase"}]},{"Type":"Moba.AI.HeroAction","NodeData":{"Offset":"(700.952637,338.095245)"},"ID":15,"Name":"Advance","Instant":true,"HeroActionKindKind":"AttackOrChase"}]}}'
+      fieldSerializationData:
+        typeName: []
+        fieldNameHash: 
+        startIndex: 
+        dataPosition: 
+        unityObjects: []
+        byteData: 
+        byteDataArray: 
+      Version: 1.7.15
+  gizmoViewMode: 2
+  showBehaviorDesignerGizmo: 1

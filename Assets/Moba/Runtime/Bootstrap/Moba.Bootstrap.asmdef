@@ -1,4 +1,4 @@
 {
 	"name": "Moba.Bootstrap",
-	"references": ["Moba.Core", "Moba.Presentation"]
+	"references": ["Moba.Core", "Moba.Presentation", "Moba.AI"]
 }

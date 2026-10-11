@@ -1,6 +1,25 @@
 {
-  "name": "Moba.Tests.PlayMode",
-  "references": ["Moba.Core"],
-  "optionalUnityReferences": ["TestAssemblies"],
-  "autoReferenced": false
+    "name": "Moba.Tests.PlayMode",
+    "rootNamespace": "",
+    "references": [
+        "Moba.Core",
+        "Moba.AI",
+        "BehaviorDesigner.Tasks",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll",
+        "BehaviorDesigner.Runtime.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

@@ -1,0 +1,8 @@
+{
+  "name": "BehaviorDesigner.Tasks.Editor",
+  "references": ["BehaviorDesigner.Tasks"],
+  "includePlatforms": ["Editor"],
+  "overrideReferences": true,
+  "precompiledReferences": ["BehaviorDesigner.Runtime.dll", "BehaviorDesigner.Editor.dll"],
+  "autoReferenced": true
+}

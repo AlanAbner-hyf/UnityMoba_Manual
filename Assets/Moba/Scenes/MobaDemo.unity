@@ -468,6 +468,7 @@ MonoBehaviour:
   Configuration: {fileID: 11400000, guid: cc30bbfa7555874419c30f859a607ddd, type: 2}
   View: {fileID: 1888149142}
   Input: {fileID: 1888149141}
+  ServerAiPrefab: {fileID: 1766367335666320440, guid: 094b282141db03f4e85736f0446920a4, type: 3}
 --- !u!4 &848606091
 Transform:
   m_ObjectHideFlags: 0

@@ -1,0 +1,6 @@
+{
+  "name": "Moba.AI",
+  "references": ["BehaviorDesigner.Tasks", "Moba.Core"],
+  "overrideReferences": true,
+  "precompiledReferences": ["BehaviorDesigner.Runtime.dll"]
+}

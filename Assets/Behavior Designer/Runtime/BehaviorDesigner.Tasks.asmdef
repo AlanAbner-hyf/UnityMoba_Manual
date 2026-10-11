@@ -1,0 +1,6 @@
+{
+  "name": "BehaviorDesigner.Tasks",
+  "overrideReferences": true,
+  "precompiledReferences": ["BehaviorDesigner.Runtime.dll"],
+  "autoReferenced": true
+}

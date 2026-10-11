@@ -14,7 +14,11 @@
 
 通过 Assets → Import Package → Custom Package 选择已有合法 Behavior Designer 安装包。保留原 Assets/Behavior Designer 和 Gizmos。不要导入 Behavior Designer Pro 的 API 示例来替换当前 1.7.x 项目。
 
-核对插件任务程序集 `BehaviorDesigner.Tasks` 与预编译 `BehaviorDesigner.Runtime.dll`。若安装包没有程序集定义，对照原项目 [Runtime asmdef](../../UnityMOBA/Assets/Behavior%20Designer/Runtime/BehaviorDesigner.Tasks.asmdef) 和 [Editor asmdef](../../UnityMOBA/Assets/Behavior%20Designer/Editor/BehaviorDesigner.Tasks.Editor.asmdef)，补齐相同隔离结构后再编译。
+核对插件任务程序集 `BehaviorDesigner.Tasks` 与预编译 `BehaviorDesigner.Runtime.dll`。若安装包没有程序集定义，对照原项目 [Runtime asmdef](<../../UnityMOBA/Assets/Behavior%20Designer/Runtime/BehaviorDesigner.Tasks.asmdef>) 和 [Editor asmdef](<../../UnityMOBA/Assets/Behavior%20Designer/Editor/BehaviorDesigner.Tasks.Editor.asmdef>)，补齐相同隔离结构后再编译。
+
+这两个程序集定义分别放在 `Assets/Behavior Designer/Runtime/BehaviorDesigner.Tasks.asmdef` 和 `Assets/Behavior Designer/Editor/BehaviorDesigner.Tasks.Editor.asmdef`。仅在 Moba.AI 中填写引用名称不会自动创建它们。`BehaviorTree.cs` 属于插件 Runtime 目录里的脚本；缺少程序集定义时，它会进入默认程序集，Moba.AI 无法按本教程的引用关系访问它。
+
+如果 IDE 提示找不到 `BehaviorTree`，不要接受添加 `using static BehaviorDesigner.Runtime.BehaviorManager;` 的修复建议。该导入会带入管理器内部的同名 `BehaviorTree` 类型，它不是挂在 GameObject 上的组件，会导致 `ExternalBehavior`、`EnableBehavior` 等成员不存在。应补齐上述程序集定义，并保留普通的 `using BehaviorDesigner.Runtime;`。
 
 创建 `Runtime/AI/Moba.AI.asmdef`：
 
@@ -32,7 +36,6 @@
 ## 2. 建立观察数据，不污染战斗状态
 
 在 Core 新建 `AiTrace.cs`。它只是带帧号的观察数据，不加入 WorldState 哈希。
-
 
 ```csharp
 // 完整文件：Assets/Moba/Runtime/Core/AiTrace.cs
@@ -75,13 +78,11 @@ namespace Moba.Core
 }
 ```
 
-
 BasedOnFrame 表示决策读取哪一帧状态，CommandFrame 表示命令属于哪一帧。AI 在要生成第 n 帧命令时读 S(n-1)，不要先 Step 再让 AI 读取 S(n)。
 
 ## 3. 实现黑板适配
 
 在 AI 新建 `BlackboardAdapter.cs`，按下面完整代码实现。先关注 Initialize、Prepare、Submit，最后补 Record/Snapshot。
-
 
 ```csharp
 // 完整文件：Assets/Moba/Runtime/AI/BlackboardAdapter.cs
@@ -152,7 +153,6 @@ namespace Moba.AI
 }
 ```
 
-
 逐项理解阈值：
 
 - HP ≤30% 时锁定撤退；达到 ≥70% 才退出撤退，中间区间保留原状态。
@@ -165,7 +165,6 @@ namespace Moba.AI
 ## 4. 写条件节点与动作节点
 
 创建以下两个**完整文件**。条件只返回 Success/Failure；持续动作返回 Running，让分支保持并等待条件中断。
-
 
 ```csharp
 // 完整文件：Assets/Moba/Runtime/AI/HeroCondition.cs
@@ -199,7 +198,6 @@ namespace Moba.AI
     }
 }
 ```
-
 
 ```csharp
 // 完整文件：Assets/Moba/Runtime/AI/HeroAction.cs
@@ -256,7 +254,6 @@ namespace Moba.AI
 }
 ```
 
-
 这里 `Action` 来自 BehaviorDesigner.Runtime.Tasks；若同文件还引入 System，注意与 System.Action 歧义，可使用完整类型名或别名。
 
 ## 5. 手动搭建行为树资产
@@ -265,6 +262,7 @@ namespace Moba.AI
 2. 添加 BlackboardAdapter 和 BehaviorTree。
 3. 打开已安装版本的 Behavior Designer 编辑窗口，在选中对象上建立树。菜单名称以当前插件为准，可在 Tools 中查找 Behavior Designer。
 4. Root 添加 Selector，按以下从左到右优先级添加节点：
+
 ```text
 Selector
 ├─ Sequence [Abort Type = Both]
@@ -282,6 +280,7 @@ Selector
 │  └─ HeroAction: AttackOrChase
 └─ HeroAction: MoveAlongLane
 ```
+
 5. 给每个节点起清楚的 FriendlyName，如 Dead、Retreat、Area Skill、Combat、Advance。
 6. 使用插件的 Export/保存为外部行为树功能，将树保存到 `Assets/Moba/AI/HeroDecision.asset`；回到组件，将 External Behavior 绑定到该资产。若菜单显示不同，目标类型应为 ExternalBehaviorTree。
 7. BehaviorTree 关闭 Start When Enabled，打开 Restart When Complete，关闭 Asynchronous Load。
@@ -292,7 +291,6 @@ Both 同时允许本分支条件失效时中断，以及高优先级分支条件
 ## 6. 手动 Tick 调度
 
 创建 `ServerAiRunner.cs`：
-
 
 ```csharp
 // 完整文件：Assets/Moba/Runtime/AI/ServerAiRunner.cs
@@ -345,13 +343,11 @@ namespace Moba.AI
 }
 ```
 
-
 观察帧号序列应为 1、5、9、13……每四个逻辑帧一次。输入未收齐或重复请求同一帧，不应再次评估。手动更新需要调用 BehaviorManager.Tick；参见 [插件 Behavior Manager 说明](https://opsive.com/support/documentation/behavior-designer/behavior-manager/)；本教程的具体调用参数以本地 1.7.x 代码为准。
 
 ## 7. 管理两个机器人实例
 
 创建 `ServerAiSystem.cs`：
-
 
 ```csharp
 // 完整文件：Assets/Moba/Runtime/AI/ServerAiSystem.cs
@@ -429,7 +425,6 @@ namespace Moba.AI
 }
 ```
 
-
 构造时明确禁止已有 BehaviorManager，防止误生成两套调度器。销毁使用 Unity Destroy，因此对象真正移除要到帧末；后续房间回收必须等这一点，不是在 Dispose 返回时立即断言场景没有对象。
 
 ## 8. 接入本地权威入口
@@ -439,11 +434,13 @@ namespace Moba.AI
 - 增加 using Moba.AI、public GameObject ServerAiPrefab、private ServerAiSystem ai。
 - 在 Start 创建 World 后构造 `ai = new ServerAiSystem(World, ServerAiPrefab);`。
 - 替换原 Step 行：
+
 ```csharp
 int frame = World.State.Frame + 1;
 var robots = ai.Evaluate(frame);
 World.Step(new FrameCommands(frame, Input.Sample(), CombatCommand.NoOp, robots));
 ```
+
 - 在 OnDestroy 调用 `ai?.Dispose();`。
 - Inspector 绑定 ServerAiAgent.prefab。本地版本是学习用权威驱动；阶段 08 正式客户端不会执行这一段。
 
@@ -459,16 +456,48 @@ World.Step(new FrameCommands(frame, Input.Sample(), CombatCommand.NoOp, robots))
 
 可对照 [HeroAiTests](../../UnityMOBA/Assets/Moba/Tests/PlayMode/HeroAiTests.cs) 和 [插件烟雾测试](../../UnityMOBA/Assets/Moba/Tests/PlayMode/BehaviorDesignerSmokeTests.cs)。测试 TearDown 中 Dispose 后 `yield return null`，再开始下一例。
 
+### 在当前手动项目中运行这五组测试
+
+已补充 [HeroAiStage05Tests.cs](../Assets/Moba/Tests/PlayMode/HeroAiStage05Tests.cs)，直接加载你手动制作的 `Assets/Moba/Prefabs/ServerAiAgent.prefab` 及其绑定的外部树。测试不依赖后续阶段的 StateHasher、Networking 或 ReplayWriter。不要把参考项目的完整测试原样复制过来，否则会引入尚未实现的模块。
+
+先检查实际绑定的 HeroDecision 外部树：最右侧动作节点可以命名为 Advance，但 **Kind 必须设为 MoveAlongLane**。名称只影响显示，不能改变节点行为。其余四个 Sequence 的 Abort Type 为 Both。Prefab 根对象保持 inactive，BehaviorTree 关闭 Start When Enabled、打开 Restart When Complete、关闭 Asynchronous Load，并绑定外部树。
+
+PlayMode 测试程序集已添加 Moba.AI、BehaviorDesigner.Tasks 引用；Override References 开启时保留 nunit.framework.dll 和 BehaviorDesigner.Runtime.dll。测试修改 HP 和位置使用 Core 中现有的 InternalsVisibleTo，不需要公开运行时状态修改权限。
+
+运行步骤：
+
+1. 保存外部树、Prefab 和当前场景，退出 Play 模式，等待 Unity 编译结束。
+2. 打开 Window → General → Test Runner，切换到 PlayMode。
+3. 展开 Moba.Tests.PlayMode，找到 HeroAiStage05Tests。
+4. 先选一个测试点击 Run Selected；逐个理解结果后，再选整个测试类执行五项。
+5. Test Runner 会进入并退出测试运行环境；不要同时手动运行游戏入口。每项测试独立创建世界和 AI，结束时 Dispose 并等待一帧销毁。
+
+| 测试方法                                                  | 如何构造条件                                                                                   | 应检查的结果                                                                                                  |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Scheduling_200FramesEvaluate50Times_AndWaitingDoesNotTick | 推进 200 个逻辑帧；期间重复 Evaluate，穿插渲染帧等待；另外调用 inputsReady=false               | 评估帧恰为 1、5、9…197，计数为 50；等待、重复调用和输入未就绪不造成额外执行                                  |
+| Retreat_290Then500StaysRetreating_700Returns              | 蓝方机器人 ID=3；在第 5/9/13/17 帧评估前分别设置 HP=290/500/699/700，699 时放进出生区          | Retreat → Retreat → Recover → Advance；700 才解除撤退锁定                                                  |
+| LowHp_AbortsChase_WithActualExitAndEnter                  | 机器人在原点，敌方英雄距其 4000；暂时禁用技能，先进入追击；第 5 帧前将 HP 改为 290             | 旧 AttackOrChase 节点记录 Exit，RetreatOrRecover 节点记录 Enter 且成为活动节点，输出回出生点的 MoveTo         |
+| Skill_PrecedesAttack_AndSubmitsOneCommandPerRobot         | 机器人在原点，敌方英雄距其 1200，技能可用                                                      | 第 1 帧只提交一条 CastArea，敌人 HP=880；第 5 帧转为普攻；第 9 帧不重复提交同一攻击，前摇不重启               |
+| RecordedCommands_ReplayFrameByFrame_WithoutAnyAiTree      | 使用 Match 默认配置记录 600 帧真实 AI 输出和逐帧状态；销毁 AI 后建立另一世界，只执行录下的命令 | 重演的每一帧世界字段、实体顺序及所有已实现实体状态都相同，且重演时没有 BehaviorManager/BlackboardAdapter 实例 |
+
+计数 50 指两棵树一起完成一轮决策的次数；每棵树各执行 50 次，总共 100 次单树 Tick。Evaluate 返回空命令也不代表没评估：它可能只是判断当前意图无需改变。应使用 EvaluationCount 或 Evaluated 事件计数。
+
+撤退测试使用 CombatFixture 隔离出兵和自动回血，因此 HP=500/699/700 是测试主动设置，用于检查阈值；它不代替阶段 04 的出生区自然回血测试。抢占测试按运行时节点 ID 匹配记录，不要求你把所有动作节点改成特定 FriendlyName。
+
+记录重演目前将命令和状态快照保存在测试内存中，没有生成磁盘回放文件。状态快照复制值，不保存可变 EntityState 引用；后续再接配置哈希和文件回放格式。
+
+本次新增测试已使用 Unity 自带编译器检查通过，尚未在 Unity Editor 中执行 PlayMode 测试；五项运行结果以 Test Runner 的实际输出为准。若提示 MoveAlongLane 数量错误，先修正外部树最右侧节点的 Kind；若缺少 Exit/Enter，优先检查四个 Sequence 的 Both 配置。
+
 ## 10. 常见问题与验收
 
-| 问题 | 定位 |
-| --- | --- |
-| Actor 为 null | RobotId 必须为 3/4，Initialize 必须早于 EnableBehavior |
-| 一局出现多个 BehaviorManager | Prefab/场景里有自动创建的管理器，或启动了两套 Bootstrap |
-| AI 没有低血抢占 | Sequence 的 Abort Type 是否为 Both，黑板是否 Prepare |
-| AI 每帧抖动改目标 | 缺少保留当前有效目标规则 |
-| 等待时行为树仍前进 | UpdateInterval 不是 Manual，或在 MonoBehaviour.Update 直接 Tick |
-| 客户端也创建 AI | 阶段 08 角色分支未限制，必须修正 |
+| 问题                         | 定位                                                            |
+| ---------------------------- | --------------------------------------------------------------- |
+| Actor 为 null                | RobotId 必须为 3/4，Initialize 必须早于 EnableBehavior          |
+| 一局出现多个 BehaviorManager | Prefab/场景里有自动创建的管理器，或启动了两套 Bootstrap         |
+| AI 没有低血抢占              | Sequence 的 Abort Type 是否为 Both，黑板是否 Prepare            |
+| AI 每帧抖动改目标            | 缺少保留当前有效目标规则                                        |
+| 等待时行为树仍前进           | UpdateInterval 不是 Manual，或在 MonoBehaviour.Update 直接 Tick |
+| 客户端也创建 AI              | 阶段 08 角色分支未限制，必须修正                                |
 
 - [ ] 树资产绑定和手动 Tick 已验证。
 - [ ] 撤退迟滞、技能优先级、目标失效和死亡抢占通过。
