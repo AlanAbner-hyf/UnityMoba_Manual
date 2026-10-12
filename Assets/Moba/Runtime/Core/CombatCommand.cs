@@ -1,5 +1,4 @@
-﻿// 完整文件：Assets/Moba/Runtime/Core/CombatCommand.cs
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Moba.Core

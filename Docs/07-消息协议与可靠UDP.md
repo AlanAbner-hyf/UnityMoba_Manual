@@ -52,6 +52,34 @@ UDP ACK 表示“传输包已收到”；FrameAck 表示“客户端模拟到某
 
 对照 [MessageCodec.cs](../../UnityMOBA/Assets/Moba/Runtime/Networking/MessageCodec.cs)，先完成 Encode→Read 往返测试。版本号 4 是当前消息编码版本，独立于之后 SessionWire 的业务版本。
 
+### 本项目已实现的第二步
+
+代码位于 [ProtocolMessages.cs](../Assets/Moba/Runtime/Networking/ProtocolMessages.cs) 和 [MessageCodec.cs](../Assets/Moba/Runtime/Networking/MessageCodec.cs)，测试位于 [MessageCodecTests.cs](../Assets/Moba/Tests/EditMode/MessageCodecTests.cs)。
+
+消息格式为 `int32 body长度 + ushort版本 + byte类型 + payload`，数值为小端编码。body 长度包含版本、类型和载荷，不含前面的 4 字节长度字段。因此最小消息为 7 字节，最大载荷为 65533 字节，最大完整消息为 65540 字节。
+
+`Read(Stream)` 读取流中的下一条消息，允许随后还有其他消息；正常流尾返回 null，半条消息抛出异常。新增的 `Decode(byte[])` 要求数组恰好容纳一条完整消息，适用于后续 UDP 重组结果；空数组或消息外多余字节均被拒绝。两者采用相同的消息编码，新增入口没有更改协议格式。
+
+消息外壳与业务字段分两层检查：Decode 能拒绝声明长度之外的尾部数据，但不知道每种业务消息应有几个字段。具体消息处理器读取已约定字段后，仍必须调用 `ProtocolFields.RequireEnd(reader)`，才能拒绝 payload 内多余字段。
+
+以下只是字符串往返示例，不是阶段 08 正式 Hello 的完整字段定义：
+
+```csharp
+var outgoing = WireMessage.Create(MessageKind.Hello,
+    writer => ProtocolFields.WriteString(writer, "你好 MOBA"));
+byte[] bytes = MessageCodec.Encode(outgoing);
+WireMessage incoming = MessageCodec.Decode(bytes);
+using (var reader = incoming.OpenReader())
+{
+    string text = ProtocolFields.ReadString(reader);
+    ProtocolFields.RequireEnd(reader);
+}
+```
+
+文本字段使用 `ProtocolFields.WriteString/ReadString` 成对读写，不与 BinaryWriter.Write(string)/BinaryReader.ReadString 混用。文本前缀是 2 字节 UTF-8 字节长度，上限 256 字节；不包括前缀本身。`ReadBytes` 用于已经装入内存的有边界载荷，不直接对 Socket 使用剩余长度检查。
+
+在 Unity 中打开 Window → General → Test Runner → EditMode，选择 MessageCodecTests → Run Selected。已有验证包含 23 个新增用例；编辑器外 NUnit 回归合计 55 个通过。具体范围及未验证项见 [验证记录](Verification/07-message-codec/verification.md)。
+
 ## 3. 定义连接抽象
 
 先在 TransportStats.cs 建立计数字段，至少包括实际收发字节、数据报数、重传、重复、乱序、非法包、队列当前值和峰值。
@@ -75,6 +103,32 @@ public interface IMessageConnection : System.IDisposable
 ```
 
 TrySend 成功表示进入传输排队，不代表对方已经执行消息。IMessageConnection 不提供修改 CombatWorld 的能力。
+
+### 本项目已实现的第三步
+
+完整代码在 [Transport/TransportStats.cs](../Assets/Moba/Runtime/Networking/Transport/TransportStats.cs)，包含 TransportStats 和 IMessageConnection。目录用于组织代码，命名空间仍为 Moba.Networking；沿用现有 Moba.Networking.asmdef，不需要新增程序集，也不需要挂到 GameObject。
+
+接口约定如下：TrySend 尝试接纳完整 WireMessage；TryReceive 非阻塞地取出一条完整消息，无消息时返回 false；CloseAfterSend 请求排空可靠消息后关闭，期间仍需驱动传输；Close 立即终止；Dispose 由具体实现释放其拥有的资源。IsClosed 不表示接收缓存已空，因此还提供 HasPendingIncoming，便于处理关闭前已经到达的最终消息。具体关闭、收发和幂等释放行为将在后续实现类中完成，接口本身没有这些运行逻辑。
+
+统计字段分三类：
+
+- 累计计数：sentDatagrams、receivedDatagrams、sentBytes、receivedBytes、firstSends、retransmissions、ackOnly、duplicates、outOfOrder、invalid、outsideWindow，以及后续 AI 快照与故障注入计数。
+- 当前量及生命周期峰值：sendBytes、receiveBytes、peakSendBytes、peakReceiveBytes、maxDatagramBytes。其中 sentBytes 是累计实际发送字节，sendBytes 是当前发送缓冲占用。
+- 当前估计与状态：rttMs、srttMs、rtoMs、congestionWindow、transport、fault。RTT 初始 -1 表示暂无样本；RTO=500ms 和窗口=8 是参考默认值，不表示已实现相应算法。
+
+Copy() 保存独立快照；Since(baseline) 只对累计计数做差，当前量和生命周期峰值保留当前数值。baseline 必须来自同一统计生命周期，不能用另一个连接的计数或计数重置前的数据；null 表示返回累计快照。当前字段全部是值类型或不可变字符串，因此 MemberwiseClone 足够；未来若添加可变集合，应重新审查复制方式。
+
+```csharp
+TransportStats before = connection.Stats.Copy();
+// 之后由后续传输实现正常处理一段时间的收发。
+TransportStats interval = connection.Stats.Since(before);
+// interval.sentBytes：这段时间实际发送的数据报字节。
+// interval.sendBytes：现在发送缓冲占用，不能解释为本段时间增量。
+```
+
+这些统计是诊断数据，不加入战斗状态哈希。字段由后续实现主动维护，不会因为声明了字段就自动开始监测网络。实际字节数指本项目数据报字节，不含操作系统添加的 IP/UDP 头。
+
+在 Test Runner 的 EditMode 下运行 TransportStatsTests，验证快照独立性、增量与当前量的区别、空基线快照。本次编辑器外 NUnit 回归为 58/58 通过；接口收发和真实网络行为尚未实现，不属于本次通过项。见 [验证记录](Verification/07-connection-abstraction/verification.md)。
 
 ## 4. 写 UdpProtocol 和固定头
 
@@ -105,6 +159,74 @@ Encode 先把 CRC 字段写为零，再对完整报文计算 CRC32/IEEE；Decode
 
 校验顺序：物理长度 → Magic/版本 → 标志与类型 → CRC/载荷长度 → 各类型字段约束 → 连接身份 → ACK/缓存修改。CRC 检测损坏，不提供加密或账号认证。
 
+### 本项目已实现的第四步
+
+代码位于 [UdpProtocol.cs](../Assets/Moba/Runtime/Networking/Transport/UdpProtocol.cs) 与 [UdpPacketCodec.cs](../Assets/Moba/Runtime/Networking/Transport/UdpPacketCodec.cs)。继续使用 Moba.Networking 程序集，不需要挂载组件或修改场景。
+
+**UdpProtocol.cs 中的三个类型**：
+
+- UdpKind：传输包类型，固定编号 1～11。ConnectRequest、Challenge、ConnectResponse、Accept、Confirm、Ready、HandshakeReject 用于后续握手；Data 承载可靠消息分片；Ack 单独确认收到的可靠包；Trace 承载独立 AI 观察快照；Close 用于可靠关闭。定义枚举不代表这些行为已实现。
+- UdpProtocol：统一保存头长、数据报大小、消息大小、窗口及后续容量/超时常量。Require(condition, reason) 在条件不成立时抛 InvalidDataException，使非法包不能作为正常结果返回。后续 Host 需要捕获异常并按来源处理，编解码器不会自行关闭连接。
+- UdpPacket：单个包的内存表示。它不继承 MonoBehaviour，不是可直接发到网络上的内存块；要经 Encode 转为 byte[]。此对象可变，不克隆赋给 Payload 的数组，调用方不要在编码过程中修改它。
+
+**为什么还需要一层头**：MessageCodec 描述“这是一条什么业务消息”，UdpPacketCodec 描述“这属于哪个连接、哪个传输包、哪条消息的第几片，以及确认了哪些包”。因此线上层次为：
+
+```text
+WireMessage（例如 Input）
+  → MessageCodec.Encode：4 字节长度 + 2 字节消息版本 + 1 字节业务类型 + 业务字段
+  → 后续发送器切成每片最多 1140 字节
+  → 每片用 UdpPacketCodec.Encode 添加 60 字节头
+  → 后续数据报端口交给 Socket
+```
+
+这里的 60 字节是应用自定义头，操作系统还会添加 IP/UDP 头；1200 只是本项目数据报字节数组的上限，不是路径 MTU 探测结果。传输版本 1 和消息编码版本 4 分别属于不同层，不要求相等。
+
+**容易混淆的字段**：
+
+| 字段 | 含义与用途 |
+| --- | --- |
+| Connection | 连接 ID。当前只验证类型所需的零/非零约束；实际 ID 和来源地址、端口是否匹配，由后续 Host/Peer 验证 |
+| Sequence | 当前方向的可靠包编号，Data/Close 使用；一个业务消息分成多个包时，每包有自己的序号 |
+| Message | 完整可靠消息或 Trace 快照编号；同一条消息的各片共用它 |
+| Index / Count / Total | 第几片、总片数、完整消息总字节数；Total 包含 MessageCodec 的长度与版本字段，不包含各片的自定义 UDP 头 |
+| AckValid / AckBase / AckBits | 是否携带有效确认、连续收到的对端包序号、其后 64 个序号的接收位图 |
+| Payload | 当前片或控制包载荷。线上 PayloadBytes 从数组长度计算，避免手动填写两份长度 |
+
+Sequence、Message 都不是游戏逻辑帧号。AckBits 的 bit i 代表 AckBase+1+i：例如依次收到包 1、3，AckBase=1，bit1=1，bit0=0；这表示包 2 仍缺失，不表示客户端已经模拟了第 3 帧。当前只是读写这些字段，接收窗口的推进在第 6 步实现。
+
+**Encode 的过程**：先 Validate 检查本地构造的包，再用 BinaryWriter 按表中固定顺序写入。数值采用小端编码，例如 0x11223344 写成 44 33 22 11，不依赖结构体字段对齐或内存布局。Connection 沿用参考项目的 Guid.ToByteArray() / new Guid(byte[]) 配对；其字节顺序不完全等同 Guid 文本从左到右的字节顺序，其他语言实现必须遵守相同约定。Reserved 和 CRC 占位先写零，写完 Payload 后计算整个报文 CRC，最后把结果填回 56～59 字节。
+
+**Decode 的过程**：先确认数组为 60～1200 字节，再检查 Magic、版本、标志位和已知类型。读取固定头后检查 Reserved、CRC、声明的载荷长度与实际长度、消息总长；然后只复制最多 1140 字节载荷，最后检查包类型与分片字段的组合。它不会按照不可信的 Total 分配完整消息缓冲，也不会处理 ACK、释放发送队列或修改战斗世界。CRC 计算把数组偏移 56～59 当作零，不改写传入数组；Decode 返回的 Payload 也不共享原报文数组。
+
+除普通损坏外，还需拒绝“CRC 正确但字段非法”的包，例如：未知类型、保留位非零、伪造超大总长、片数不匹配、末片长度不对、无 AckValid 却填了 ACK、握手包携带 ACK、Ack/Trace 占用可靠 Sequence 等。CRC 可以被重新计算，所以它既不能代替字段校验，也不能证明发送者可信。
+
+**分片长度例子**：完整 MessageCodec 消息若为 2500 字节，应有 3 片，载荷分别为 1140、1140、220 字节；每片声明 Total=2500、Count=3，Index 分别为 0、1、2。带头的数据报分别为 1200、1200、280 字节。本步验证单片元数据，不负责实际拆分和重组；跨片一致性还要由后续可靠层检查。最大消息 65540 字节共 58 片，最后一片载荷 560 字节。
+
+以下例子演示一条能装入单片的小消息如何包装、解包，不执行网络收发，也不是阶段 08 正式 Input 字段定义：
+
+```csharp
+byte[] messageBytes = MessageCodec.Encode(
+    WireMessage.Create(MessageKind.Input, writer => writer.Write(123)));
+var packet = new UdpPacket
+{
+    Kind = UdpKind.Data,
+    Connection = new System.Guid("00112233-4455-6677-8899-aabbccddeeff"), // 仅演示；实际由握手提供。
+    Sequence = 1,
+    Message = 1,
+    Index = 0,
+    Count = 1,
+    Total = messageBytes.Length,
+    Payload = messageBytes
+};
+byte[] datagram = UdpPacketCodec.Encode(packet);
+UdpPacket receivedPacket = UdpPacketCodec.Decode(datagram);
+WireMessage receivedMessage = MessageCodec.Decode(receivedPacket.Payload);
+```
+
+一般情况下 Decode 得到的 Payload 只是一片，必须等待后续重组完成才能交给 MessageCodec.Decode。握手包的 96 字节载荷现在只检查外层长度，内部 nonce、cookie、填零规则留到第 11 步。序号比较工具 Sequence32 见第 5 步。
+
+测试位于 [UdpPacketCodecTests.cs](../Assets/Moba/Tests/EditMode/UdpPacketCodecTests.cs)。在 Window → General → Test Runner → EditMode 下运行该测试类；本次编辑器外执行新增 42 个用例、全部回归 100/100 通过。独立 Python struct/zlib 样例核对了整个报文的字节布局及 CRC。Unity 编辑器内测试、真实 Socket、多客户端同步尚未验证。详见 [验证记录](Verification/07-udp-header/verification.md)。
+
 ## 5. 处理 uint 序号环绕
 
 下面是**完整类型**，放入 UdpProtocol.cs 的 Moba.Networking 命名空间：
@@ -124,6 +246,56 @@ public static class Sequence32
 ```
 
 测试 0 相对 uint.MaxValue 是下一序号；差值恰好 2^31 的比较拒绝。后面所有包序号比较统一调用它，不能局部改回 `a > b`。
+
+### 本项目已实现的第五步
+
+已在 [UdpProtocol.cs](../Assets/Moba/Runtime/Networking/Transport/UdpProtocol.cs) 的 Moba.Networking 命名空间中加入 Sequence32。沿用参考项目的方法签名和行为，不改变固定头、消息版本或程序集引用。
+
+**为什么要循环比较**：uint 的范围是 0～4294967295，只有 2^32 种值。持续编号在 unchecked 递增时会经历 `4294967294 → 4294967295 → 0 → 1`。普通整数比较会把 0 判为比 4294967295 小；若据此判断新旧，就会把回绕后的新包误当旧包，影响接收窗口和 ACK 处理。可靠 Data/Close 的 Sequence=0 因此可以是正常序号，不能永久作为“未分配”的标志。
+
+**Compare(a, b)** 返回 a 相对 b 的顺序：1 表示更新，0 表示相同，-1 表示更旧。它先计算 `uint delta = unchecked(a - b)`，即 `(a - b) mod 2^32`。unchecked 明确允许无符号减法回绕，即使编译器启用了溢出检查也不会在此处抛 OverflowException。
+
+| delta | 结果 |
+| --- | --- |
+| 0 | 同一序号，返回 0 |
+| 1～2147483647，小于半圈 | a 在 b 的前方，返回 1 |
+| 2147483648，恰好半圈 | 两个方向同样远，抛 InvalidDataException("AmbiguousSequence") |
+| 2147483649～4294967295，大于半圈 | 将 a 判断为 b 后方的旧序号，返回 -1 |
+
+例如 `Compare(0, uint.MaxValue)` 的 delta=1，结果为 1；反向比较 delta=4294967295，结果为 -1。对于 0 和 2147483648，两个方向都正好半圈，不能猜测先后，所以两个方向的 Compare 都拒绝。
+
+这个规则要求参与有意义比较的实际序号跨度小于半圈。当前可靠窗口只有 64，后续连接隔离、窗口和超时共同限制有效包的范围。Sequence32 本身无法分辨已经绕过整圈的同值旧包，也不是任意 uint 集合的全局排序比较器；不能不加限制地交给 List.Sort 或有序树使用。
+
+**Distance(a, b)** 返回从 b 沿递增方向走到 a 的模距离，仍为 `unchecked(a - b)`。它不是绝对值或最短距离，也不直接判定新旧：
+
+```text
+Distance(0, 4294967295) = 1
+Distance(1, 4294967294) = 3   // 4294967294 → 4294967295 → 0 → 1
+Distance(4294967295, 0) = 4294967295
+Distance(2147483648, 0) = 2147483648
+```
+
+最后一例可以得到数学距离，但 Compare 会拒绝判断该对序号的先后。因此接收端应先比较，再根据距离判断窗口。下面只是第 6 步的调用顺序示意，当前没有实现接收窗口、缓存或 ACK 状态更新：
+
+```csharp
+int order = Sequence32.Compare(packet.Sequence, receiveBase);
+if (order <= 0)
+{
+    // 相同或旧序号：进入后续重复包处理，不再作为新包交付。
+    return;
+}
+uint distance = Sequence32.Distance(packet.Sequence, receiveBase);
+if (distance > UdpProtocol.Window)
+{
+    // 新序号，但超出当前 64 包接收窗口：进入后续窗口外处理。
+    return;
+}
+// 此时 distance 在 1～64 之间，才可使用 bit(distance - 1)。
+```
+
+序号递增时也应明确使用 `unchecked(sequence + 1u)`。Compare 里的 unchecked 只作用于它包住的表达式，不会自动让调用方的其他加法允许溢出。
+
+新增测试 [UdpSequenceTests.cs](../Assets/Moba/Tests/EditMode/UdpSequenceTests.cs) 共 22 个用例：普通顺序、相等、回绕、半圈两侧、双向半圈拒绝、方向性距离，以及普通/跨零点的 64 与 65 包窗口距离。编辑器外全部 EditMode 逻辑回归 122/122 通过；另将 UdpProtocol.cs 与序号测试以 `-checked+` 编译，22/22 通过。Unity 编辑器内测试和可靠 UDP 收发未验证，见 [验证记录](Verification/07-uint-sequence/verification.md)。
 
 ## 6. 从一个包开始实现可靠接收窗口
 
