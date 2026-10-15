@@ -4,6 +4,8 @@
     "references": [
         "Moba.Core",
         "Moba.AI",
+        "Moba.Networking",
+        "Moba.Tests.Fixtures",
         "BehaviorDesigner.Tasks",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"

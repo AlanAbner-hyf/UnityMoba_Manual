@@ -5,7 +5,8 @@
         "Moba.Core",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
-        "Moba.Networking"
+        "Moba.Networking",
+        "Moba.Tests.Fixtures"
     ],
     "includePlatforms": [
         "Editor"

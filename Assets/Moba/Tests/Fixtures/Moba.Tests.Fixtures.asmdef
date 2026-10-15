@@ -1,0 +1,7 @@
+{
+    "name": "Moba.Tests.Fixtures",
+    "references": ["Moba.Core", "Moba.Networking"],
+    "autoReferenced": false,
+    "defineConstraints": ["UNITY_INCLUDE_TESTS"],
+    "noEngineReferences": true
+}

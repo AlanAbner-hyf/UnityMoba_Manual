@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="2" result="Passed" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-10-12 10:55:44Z" end-time="2026-10-12 10:55:48Z" duration="3.8778438">
+  <test-suite type="TestSuite" id="1016" name="MobaStage06Canonical-86bd019c56664d769548fc6e1906ec45" fullname="MobaStage06Canonical-86bd019c56664d769548fc6e1906ec45" runstate="Runnable" testcasecount="9" result="Passed" start-time="2026-10-12 10:55:44Z" end-time="2026-10-12 10:55:48Z" duration="3.877844" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="PlayMode" />
+    </properties>
+    <test-suite type="Assembly" id="1010" name="Moba.Tests.PlayMode.dll" fullname="C:/Users/AlanAbner/AppData/Local/Temp/MobaStage06Canonical-86bd019c56664d769548fc6e1906ec45/Library/ScriptAssemblies/Moba.Tests.PlayMode.dll" runstate="Runnable" testcasecount="7" result="Passed" start-time="2026-10-12 10:55:45Z" end-time="2026-10-12 10:55:48Z" duration="3.871506" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="44148" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="PlayMode" />
+        <property name="EditorOnly" value="False" />
+      </properties>
+      <test-suite type="TestFixture" id="1001" name="AiUnifiedFrameStage06Tests" fullname="AiUnifiedFrameStage06Tests" classname="AiUnifiedFrameStage06Tests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-10-12 10:55:45Z" end-time="2026-10-12 10:55:48Z" duration="3.870330" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-case id="1002" name="MissingInputDoesNotEvaluateRealAi_ResumeDoesNotCatchUp" fullname="AiUnifiedFrameStage06Tests.MissingInputDoesNotEvaluateRealAi_ResumeDoesNotCatchUp" methodname="MissingInputDoesNotEvaluateRealAi_ResumeDoesNotCatchUp" classname="AiUnifiedFrameStage06Tests" runstate="Runnable" seed="1004004392" result="Passed" start-time="2026-10-12 10:55:45Z" end-time="2026-10-12 10:55:45Z" duration="0.054247" asserts="0">
+          <properties>
+            <property name="_JOINTYPE" value="UnityCombinatorial" />
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+        </test-case>
+        <test-case id="1003" name="RealAiUnifiedFramesAgreeFor6000Frames_ClientsReplayWithoutTrees" fullname="AiUnifiedFrameStage06Tests.RealAiUnifiedFramesAgreeFor6000Frames_ClientsReplayWithoutTrees" methodname="RealAiUnifiedFramesAgreeFor6000Frames_ClientsReplayWithoutTrees" classname="AiUnifiedFrameStage06Tests" runstate="Runnable" seed="1520587965" result="Passed" start-time="2026-10-12 10:55:45Z" end-time="2026-10-12 10:55:48Z" duration="3.807570" asserts="0">
+          <properties>
+            <property name="_JOINTYPE" value="UnityCombinatorial" />
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+          <output><![CDATA[Saving results to: C:/Users/AlanAbner/AppData/Local/Temp/MobaStage06Canonical-86bd019c56664d769548fc6e1906ec45/playmode-results.xml
+]]></output>
+        </test-case>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>
